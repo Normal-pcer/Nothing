@@ -17,19 +17,19 @@ def main():
         DEFAULTRETRY = int(input('最大重连次数：'))
         OUTDIR = input('输出文件夹名（注意，该文件夹将被清除（如果存在））：')
 
-        def catch(URL="https://pic.netbian.com/"+ZONE):
+        def catch(URL="https://pic.net1bian.com/"+ZONE):
             URL = URL.replace("index_1.html", "")
-            def getList(retryNum = DEFAULTRETRY):
+            def getContent(url=URL, retryNum = DEFAULTRETRY):
                 if retryNum <= 0:  return None
                 try:
-                    r = req.get(URL)
+                    r = req.get(url)
                     content = r.content
                     return content
                 except:
                     sleep(TIMEOUT)
-                    return getList(retryNum-1)
+                    return getContent(url, retryNum-1)
             
-            r = getList()
+            r = getContent()
             if r is None: 
                 print("无法获取位于{}的图片列表，已经跳过。".format(URL))
             txt = str(r, encoding="GBK")
@@ -46,10 +46,21 @@ def main():
                 a = bso.a
                 if a == None:
                     continue
-                bso = bs(str(a), features="html.parser")
-                img = bso.img
-                src = img.attrs["src"]
-                results.append("https://pic.netbian.com"+src)
+                # 同一页的缩略图（弃用）
+                # img = bso.img
+                # src = img.attrs["src"]
+                # results.append("https://pic.netbian.com"+src)
+                href = a.attrs["href"]
+                new = getContent("https://pic.netbian.com"+href)
+                if new is None:
+                    print("无法获取位于{}的图片链接，已经跳过。".format(
+                        "https://pic.netbian.com"+href))
+                new = str(new, encoding="GBK")
+                bso = bs(new, features="html.parser")
+                a = str(set(bso.select("a#img")).pop())
+                bso = bs(a, features="html.parser")
+                imgsrc = bso.img.attrs["src"]
+                results.append("https://pic.netbian.com"+imgsrc)
             return results
 
         all_ = list()
